@@ -1,17 +1,30 @@
-# src/preprocess.py
 import pandas as pd
+import os
 
-# Load raw data
-data = pd.read_csv("../data/raw/MachineLearningRating_v3.txt", sep="\t")  # adjust separator if needed
+raw_file = "data/raw/MachineLearningRating_v3.txt"
+processed_file = "data/processed/cleaned_data.csv"
 
-# Display data info
-print("Data Info:")
-print(data.info())
+# Ensure processed directory exists
+os.makedirs(os.path.dirname(processed_file), exist_ok=True)
 
-# Check for missing values
-print("\nMissing Values:")
-print(data.isnull().sum())
+# Use chunksize for large file
+chunksize = 100_000  # adjust according to your RAM
 
-# Save processed data
-data.to_csv("../data/processed/cleaned_data.csv", index=False)
-print("\nProcessed data saved to data/processed/cleaned_data.csv")
+chunks = []
+
+# Use default engine (C) and remove low_memory for compatibility
+for chunk in pd.read_csv(raw_file, sep="|", chunksize=chunksize, engine='c'):
+    chunks.append(chunk)
+
+# Concatenate all chunks
+data = pd.concat(chunks, ignore_index=True)
+
+# Optional: save a sample for quick EDA
+data_sample = data.sample(n=100_000, random_state=42)
+data_sample.to_csv("data/processed/cleaned_data_sample.csv", index=False)
+
+# Save full processed data (if your RAM allows)
+data.to_csv(processed_file, index=False)
+
+print(f"Processed data saved to {processed_file}")
+print("Sample of 100k rows saved to data/processed/cleaned_data_sample.csv")
